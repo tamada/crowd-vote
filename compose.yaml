@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - crowd-vote-data:/app/data
+    environment:
+      - DB_PATH=/app/data/crowd_vote.db
+
+volumes:
+  crowd-vote-data:
