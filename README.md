@@ -1,6 +1,6 @@
-# Crowd Vote API 📊
+# Crowd Vote API & Sample Web App 📊
 
-Crowd Vote is a lightweight, containerized REST API service designed for real-time reporting and monitoring of location-based crowdedness. 🌐
+Crowd Vote is a lightweight, containerized REST API service designed for real-time reporting and monitoring of location-based crowdedness. It now also ships with a simple sample web app for local testing. 🌐
 
 ## Features ✨
 
@@ -9,6 +9,7 @@ Crowd Vote is a lightweight, containerized REST API service designed for real-ti
 - **Dynamic Aggregation**: Automatically calculates crowdedness rates (average levels and total votes) based on user-defined time windows. ⏱️
 - **Pluggable Storage**: Supports SQLite by default, with an abstraction layer ready for NoSQL (MongoDB). 💾
 - **Container-Ready**: Fully dockerized with `docker-compose` support for quick deployment. 🐳
+- **Sample Web App**: Provides a browser-based UI for creating demo locations and submitting votes against the local API. 🧪
 
 ## Getting Started 🚀
 
@@ -16,14 +17,16 @@ Crowd Vote is a lightweight, containerized REST API service designed for real-ti
 
 - Docker & Docker Compose
 
-### Running the API
+### Running the API and Sample Web App
 
 1. Clone the repository.
 2. Build and run the services:
    ```bash
-   docker compose up --build
+   ./launch-sample-webapp.sh
    ```
-3. The API will be available at `http://localhost:8080`.
+   You can also run `docker compose up --build` directly.
+3. Open `http://localhost:8080` for the sample web app.
+4. The REST API is also available at `http://localhost:8080`.
 
 ## API Usage 📡
 

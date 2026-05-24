@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crowd Vote Sample Web App</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f7fb;
+      color: #1f2933;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1rem 3rem;
+    }
+
+    h1, h2 {
+      margin-bottom: 0.5rem;
+    }
+
+    .layout {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    form {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    label {
+      display: grid;
+      gap: 0.35rem;
+      font-weight: 600;
+    }
+
+    input, textarea, button {
+      font: inherit;
+      padding: 0.7rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #cbd2d9;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #52606d;
+    }
+
+    button.vote {
+      min-width: 3rem;
+      padding: 0.55rem 0.7rem;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+      margin: 0;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    li {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 0.9rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .muted {
+      color: #52606d;
+      font-size: 0.95rem;
+    }
+
+    #status {
+      min-height: 1.5rem;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Crowd Vote Sample Web App</h1>
+    <p class="muted">Use this page to create demo locations and submit quick crowd ratings against the local REST API.</p>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Demo Settings</h2>
+        <form id="group-form">
+          <label>
+            Group
+            <input id="group" name="group" value="demo" required>
+          </label>
+          <button type="submit" class="secondary">Load Locations</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Create Location</h2>
+        <form id="location-form">
+          <label>
+            ID
+            <input id="location-id" name="id" placeholder="entrance" required>
+          </label>
+          <label>
+            Name
+            <input id="location-name" name="name" placeholder="Main Entrance" required>
+          </label>
+          <label>
+            Description
+            <textarea id="location-description" name="description" placeholder="Optional note for local testing"></textarea>
+          </label>
+          <button type="submit">Create Location</button>
+        </form>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top: 1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Locations</h2>
+          <p class="muted" style="margin:0.25rem 0 0;">Vote levels: 0 = empty, 3 = crowded.</p>
+        </div>
+        <button id="refresh" type="button" class="secondary">Refresh Rates</button>
+      </div>
+      <ul id="locations"></ul>
+      <p id="empty" class="muted">No locations yet. Create one to begin testing.</p>
+      <div id="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    const groupInput = document.getElementById('group');
+    const locationForm = document.getElementById('location-form');
+    const groupForm = document.getElementById('group-form');
+    const refreshButton = document.getElementById('refresh');
+    const locationsList = document.getElementById('locations');
+    const emptyState = document.getElementById('empty');
+    const status = document.getElementById('status');
+
+    function currentGroup() {
+      return groupInput.value.trim() || 'demo';
+    }
+
+    function showStatus(message, isError = false) {
+      status.textContent = message;
+      status.style.color = isError ? '#b42318' : '#0f766e';
+    }
+
+    async function fetchJSON(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(await response.text() || `Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function loadLocations() {
+      const group = encodeURIComponent(currentGroup());
+      const [locations, rates] = await Promise.all([
+        fetchJSON(`/locations/${group}`),
+        fetchJSON(`/votes/${group}`)
+      ]);
+
+      const ratesByLocation = new Map(rates.map((rate) => [rate.location_id, rate]));
+      locationsList.innerHTML = '';
+
+      locations.forEach((location) => {
+        const rate = ratesByLocation.get(location.id);
+        const item = document.createElement('li');
+        item.innerHTML = `
+          <div>
+            <strong>${location.name}</strong>
+            <div class="muted">${location.id}${location.description ? ` — ${location.description}` : ''}</div>
+          </div>
+          <div class="muted">Average crowd level: ${rate ? rate.votes.toFixed(2) : '0.00'} (${rate ? rate.total : 0} vote(s))</div>
+          <div class="actions">
+            <span class="muted">Vote:</span>
+            ${[0, 1, 2, 3].map((level) => `<button type="button" class="vote" data-location="${location.id}" data-level="${level}">${level}</button>`).join('')}
+          </div>
+        `;
+        locationsList.appendChild(item);
+      });
+
+      emptyState.hidden = locations.length > 0;
+      if (locations.length === 0) {
+        showStatus('Ready for local testing. Add a location to start voting.');
+      }
+    }
+
+    async function createLocation(event) {
+      event.preventDefault();
+      const payload = {
+        id: document.getElementById('location-id').value.trim(),
+        name: document.getElementById('location-name').value.trim(),
+        description: document.getElementById('location-description').value.trim()
+      };
+
+      await fetchJSON(`/locations/${encodeURIComponent(currentGroup())}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      locationForm.reset();
+      showStatus(`Created location "${payload.name}".`);
+      await loadLocations();
+    }
+
+    async function submitVote(locationID, level) {
+      await fetchJSON(`/votes/${encodeURIComponent(currentGroup())}/${encodeURIComponent(locationID)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level })
+      });
+
+      showStatus(`Submitted vote level ${level} for ${locationID}.`);
+      await loadLocations();
+    }
+
+    groupForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      try {
+        await loadLocations();
+        showStatus(`Loaded group "${currentGroup()}".`);
+      } catch (error) {
+        showStatus(error.message, true);
+      }
+    });
+
+    locationForm.addEventListener('submit', async (event) => {
+      try {
+        await createLocation(event);
+      } catch (error) {
+        showStatus(error.message, true);
+      }
+    });
+
+    refreshButton.addEventListener('click', async () => {
+      try {
+        await loadLocations();
+        showStatus(`Refreshed group "${currentGroup()}".`);
+      } catch (error) {
+        showStatus(error.message, true);
+      }
+    });
+
+    locationsList.addEventListener('click', async (event) => {
+      const button = event.target.closest('button.vote');
+      if (!button) {
+        return;
+      }
+
+      try {
+        await submitVote(button.dataset.location, Number(button.dataset.level));
+      } catch (error) {
+        showStatus(error.message, true);
+      }
+    });
+
+    loadLocations().catch((error) => showStatus(error.message, true));
+  </script>
+</body>
+</html>
