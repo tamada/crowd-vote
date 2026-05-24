@@ -92,3 +92,17 @@ func TestHandlers(t *testing.T) {
 		t.Errorf("Expected 200, got %d", w.Code)
 	}
 }
+
+func TestSampleWebApp(t *testing.T) {
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	newMux().ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200, got %d", w.Code)
+	}
+	if body := w.Body.String(); !bytes.Contains([]byte(body), []byte("Crowd Vote Sample Web App")) {
+		t.Fatalf("Expected sample web app content, got %q", body)
+	}
+}

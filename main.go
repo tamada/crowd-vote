@@ -3,7 +3,9 @@ package main
 import (
 	"crowd-vote/db"
 	"crowd-vote/service"
+	"embed"
 	"encoding/json"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +13,9 @@ import (
 )
 
 var svc *service.CrowdVoteService
+
+//go:embed web/*
+var webFiles embed.FS
 
 func main() {
 	dbPath := os.Getenv("DB_PATH")
@@ -29,6 +34,13 @@ func main() {
 	svc = service.NewCrowdVoteService(store)
 
 	// Setup Routes (REST)
+	mux := newMux()
+
+	log.Println("Server starting on :8080...")
+	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+func newMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /locations/{group}", listLocations)
 	mux.HandleFunc("POST /locations/{group}", createLocation)
@@ -37,9 +49,16 @@ func main() {
 	mux.HandleFunc("GET /votes/{group}/{id}", getCrowdRate)
 	mux.HandleFunc("GET /votes/{group}", listCrowdRates)
 	mux.HandleFunc("GET /histories/{group}/{id}", getHistory)
+	mux.Handle("GET /", sampleWebApp())
+	return mux
+}
 
-	log.Println("Server starting on :8080...")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+func sampleWebApp() http.Handler {
+	webRoot, err := fs.Sub(webFiles, "web")
+	if err != nil {
+		panic(err)
+	}
+	return http.FileServerFS(webRoot)
 }
 
 // REST Handlers
