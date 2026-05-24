@@ -201,13 +201,16 @@
 
       locations.forEach((location) => {
         const rate = ratesByLocation.get(location.id);
+        const avgLevel = rate ? rate.votes.toFixed(2) : '0.00';
+        const totalVotes = rate ? rate.total : 0;
+        const voteLabel = totalVotes === 1 ? 'vote' : 'votes';
         const item = document.createElement('li');
         item.innerHTML = `
           <div>
             <strong>${location.name}</strong>
             <div class="muted">${location.id}${location.description ? ` — ${location.description}` : ''}</div>
           </div>
-          <div class="muted">Average crowd level: ${rate ? rate.votes.toFixed(2) : '0.00'} (${rate ? rate.total : 0} vote(s))</div>
+          <div class="muted">Average crowd level: ${avgLevel} (${totalVotes} ${voteLabel})</div>
           <div class="actions">
             <span class="muted">Vote:</span>
             ${[0, 1, 2, 3].map((level) => `<button type="button" class="vote" data-location="${location.id}" data-level="${level}">${level}</button>`).join('')}
