@@ -27,6 +27,7 @@ Crowd Vote is a lightweight, containerized REST API service designed for real-ti
    You can also run `docker compose up --build` directly.
 3. Open `http://localhost:8080` for the sample web app.
 4. The REST API is also available at `http://localhost:8080`.
+5. Stop the local stack with `Ctrl+C`, then run `docker compose down` if you want to remove the containers.
 
 ## API Usage 📡
 
